@@ -15,6 +15,7 @@ type Store interface {
 	GetGrant(id string) (*model.Grant, error)
 	UpdateGrantStatus(id, status string) error
 	InsertGrant(grant *model.Grant) error
+	GetAllGrants() ([]*model.Grant, error)
 	Close() error
 	DB() *sql.DB
 }
@@ -78,8 +79,20 @@ func (s *SQLiteStore) GetGrant(id string) (*model.Grant, error) {
 }
 
 func (s *SQLiteStore) UpdateGrantStatus(id, status string) error {
-	_, err := s.db.Exec("UPDATE grants SET status = ? WHERE grantid = ?", status, id)
-	return err
+	tx, err := s.db.Exec("UPDATE grants SET status = ? WHERE grantid = ?", status, id)
+	if err != nil {
+		return err
+	}
+	re, err := tx.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if re == 0 {
+		return ErrGrantNotFound
+	}
+
+	return nil
 }
 
 func (s *SQLiteStore) Close() error {
@@ -97,4 +110,32 @@ func (s *SQLiteStore) InsertGrant(grant *model.Grant) error {
 		grant.GrantID, grant.GrantAmount, grant.Status, string(contributionsJSON),
 	)
 	return err
+}
+
+func (s *SQLiteStore) GetAllGrants() ([]*model.Grant, error) {
+	rows, err := s.db.Query("SELECT grantid, grant_amount, status, contributions FROM grants")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var grants []*model.Grant
+	for rows.Next() {
+		var grant model.Grant
+		var contributionsJSON string
+
+		err := rows.Scan(&grant.GrantID, &grant.GrantAmount, &grant.Status, &contributionsJSON)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(contributionsJSON), &grant.Contributions)
+		if err != nil {
+			return nil, err
+		}
+
+		grants = append(grants, &grant)
+	}
+
+	return grants, nil
 }

@@ -26,6 +26,7 @@ func NewServer(store store.Store) *Server {
 func (s *Server) routes() {
 	s.router.HandleFunc("/grant/{id}", s.handleGetGrant).Methods("GET")
 	s.router.HandleFunc("/grant/{id}", s.handleUpdateGrantStatus).Methods("POST")
+	s.router.HandleFunc("/grants", s.handleGetAllGrants).Methods("GET")
 }
 
 func (s *Server) Start(addr string) error {
@@ -63,4 +64,16 @@ func (s *Server) handleUpdateGrantStatus(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Grant status updated to closed")
+}
+
+func (s *Server) handleGetAllGrants(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("here")
+	grants, err := s.store.GetAllGrants()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(grants)
 }
