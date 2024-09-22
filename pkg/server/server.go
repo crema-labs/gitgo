@@ -36,11 +36,14 @@ func (s *Server) routes() {
 	// Create a new router
 	s.router = mux.NewRouter()
 
-	// Use the CORS middleware
-	s.router = c.Handler(s.router).(*mux.Router)
+	// Define your routes
 	s.router.HandleFunc("/grant/{id}", s.handleGetGrant).Methods("GET")
 	s.router.HandleFunc("/grant/{id}", s.handleUpdateGrantStatus).Methods("POST")
 	s.router.HandleFunc("/grants", s.handleGetAllGrants).Methods("GET")
+
+	// Wrap the router with the CORS middleware
+	// Note: We're not doing any type assertion here
+	s.router.Use(c.Handler)
 }
 
 func (s *Server) Start(addr string) error {

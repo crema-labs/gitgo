@@ -18,7 +18,7 @@ func main() {
 	}
 	defer db.Close()
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 10; i++ {
 		grant := &model.Grant{
 			GrantID:     randomString(),
 			GrantAmount: "2000",
