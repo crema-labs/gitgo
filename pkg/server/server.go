@@ -7,6 +7,7 @@ import (
 
 	"github.com/crema-labs/gitgo/pkg/store"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 type Server struct {
@@ -24,6 +25,19 @@ func NewServer(store store.Store) *Server {
 }
 
 func (s *Server) routes() {
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Allow all origins
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:   []string{"Origin", "Authorization", "Content-Type"},
+		ExposedHeaders:   []string{"Content-Length"},
+		AllowCredentials: true,
+	})
+
+	// Create a new router
+	s.router = mux.NewRouter()
+
+	// Use the CORS middleware
+	s.router = c.Handler(s.router).(*mux.Router)
 	s.router.HandleFunc("/grant/{id}", s.handleGetGrant).Methods("GET")
 	s.router.HandleFunc("/grant/{id}", s.handleUpdateGrantStatus).Methods("POST")
 	s.router.HandleFunc("/grants", s.handleGetAllGrants).Methods("GET")
